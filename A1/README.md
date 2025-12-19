@@ -43,44 +43,49 @@ A1/
 ---
 
 ## Pseudo-Code
+1. Define image domain
+   Set the resolution of the image to establish the spatial domain
+   in which all patterns will be generated.
 
-1. Initialize parameters  
-   - Define the image resolution using height = 200 and width = 200.
+2. Initialize image field
+   Create an empty RGB image that will be progressively built up
+   through layered mathematical transformations.
 
-2. Create blank canvas  
-   - Initialize a black RGB image using np.zeros((height, width, 3)).
+3. Establish spatial reference system
+   Generate a 2D coordinate grid representing pixel positions.
+   This grid serves as the input space for all procedural patterns.
 
-3. Generate coordinate system  
-   - Create X and Y grids using np.arange() and np.meshgrid().  
-   - These grids define pixel positions and act as input domains for pattern generation.
+4. Generate periodic base structures
+   Create multiple sine-based fields oriented along different axes.
+   Each field represents a smooth, repeating structure assigned
+   to a specific color channel.
 
-4. Generate base sine-wave fields  
-   - Apply sine functions to the coordinate grids.  
-   - Use different frequencies and orientations for each color channel.
+5. Introduce global spatial hierarchy
+   Compute a radial field centered in the image.
+   Use this field to emphasize the center and gradually reduce
+   intensity toward the edges.
 
-5. Create radial gradient field  
-   - Compute the distance from each pixel to the image center.  
-   - Normalize and invert distances to create a center-focused gradient.
+6. Introduce controlled randomness
+   Generate a continuous noise field by smoothing random values.
+   This ensures variability while preserving spatial coherence.
 
-6. Generate smooth noise field  
-   - Create a random field using np.random.rand().  
-   - Smooth the noise by averaging neighboring values using np.roll().
+7. Combine pattern layers
+   Modulate the periodic base structures using the gradient and
+   noise fields to produce a layered, non-uniform image.
+   Blend the resulting fields into the RGB channels.
 
-7. Combine pattern layers  
-   - Modulate sine-wave fields with the radial gradient and noise.  
-   - Blend the resulting fields into the RGB channels.
+8. Add geometric contrast
+   Overlay a rigid square frame at the center of the image.
+   This introduces a clear contrast between organic and
+   geometric structures.
 
-8. Draw central square frame  
-   - Compute the square’s position and size relative to the image dimensions.  
-   - Use NumPy slicing to draw a white square border.
+9. Add localized variation
+   Insert several small, randomly positioned color accents
+   to create scale contrast and visual tension.
 
-9. Add random green squares  
-   - Place several small green squares at random positions.  
-   - Use random intensities to introduce local contrast.
-
-10. Save and display result  
-    - Save the final image to the images/ folder.  
-    - Display the image using Matplotlib.
+10. Output result
+    Convert the computed image into a valid color format,
+    save it to disk, and display it for inspection.
 
 ---
 
