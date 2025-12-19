@@ -1,57 +1,121 @@
-# Assignment 1: NumPy Array Manipulation for 2D Pattern Generation
+"""
+Assignment 2: Fractal Generator
 
-# Instructions:
-# - Write your code to generate patterns using NumPy.
-# - Use comments to explain your logic and the methods you're using.
-# - Feel free to be creative and explore different techniques.
+Author: Mathias Madsen
 
-import numpy as np
+Description:
+"""
 import matplotlib.pyplot as plt
+import random
+import math
+import os
+from shapely.geometry import LineString, Point
 
-# Initialize your canvas (e.g., a 2D array filled with zeros)
-# You can adjust the size as needed
-canvas_height = 100  # Modify as desired
-canvas_width = 100   # Modify as desired
-canvas = np.zeros((canvas_height, canvas_width))
 
-# Apply array manipulations to create a pattern
-# Suggestions:
-# - Use slicing and indexing to create stripes or checkerboards
-# - Use mathematical functions to create gradients
-# - Combine multiple patterns
+def draw_branch(ax, x, y, length, angle, depth, max_depth, shrink_factor,
+                branch_angle, attractor, attractor_strength, lines,
+                min_length):
+    # Stop condition: if the branch is too small or depth exceeds maximum
+    if depth > max_depth or length < min_length:
+        ax.scatter(x, y, s=20, color='green', zorder=3)  # Draw a leaf as a green dot
+        return
 
-# Example (you can modify or remove this):
-# Create horizontal stripes
-# for i in range(0, canvas_height, 20):
-#     canvas[i:i+10, :] = 255  # Assign a value to create a stripe
+    # Attractor influence: calculate direction toward attractor point
+    dx = attractor.x - x
+    dy = attractor.y - y
+    angle_to_attractor = math.degrees(math.atan2(dy, dx))
+    # Blend current angle with attractor angle based on attractor_strength
+    angle = (1 - attractor_strength) * angle + attractor_strength * angle_to_attractor
 
-# Introduce randomness to add variability
-# Suggestions:
-# - Use np.random functions to add noise
-# - Randomly change pixel values within certain regions
+    # Calculate endpoint of the current branch using basic trigonometry
+    x2 = x + length * math.cos(math.radians(angle))
+    y2 = y + length * math.sin(math.radians(angle))
+    new_line = LineString([(x, y), (x2, y2)])
 
-# Example:
-# noise = np.random.randint(0, 50, (canvas_height, canvas_width))
-# canvas = canvas + noise
+    # Collision check: prevent branches from crossing each other
+    for old_line, _ in lines:
+        if new_line.crosses(old_line):
+            return
 
-# Work with RGB channels
-# Convert your 2D canvas to a 3D array for RGB representation
-# Assign different colors to different parts of your pattern
+    # Save the line and its depth for plotting and future collision checks
+    lines.append((new_line, depth))
 
-# Example:
-# canvas_rgb = np.stack((canvas, canvas, canvas), axis=2)
+    # Add some random variation to make the tree look natural
+    rand_angle = random.uniform(-10, 10)
+    new_length = length * shrink_factor  # Scale down the branch length
+    base_angle = branch_angle * (1 - depth / max_depth)  # Reduce angle for higher branches
 
-# Assign colors
-# canvas_rgb[:, :, 0] = 255  # Modify the red channel
-# canvas_rgb[:, :, 1] = canvas_rgb[:, :, 1] * 0.5  # Modify the green channel
+    # Recursive calls: create two new branches
+    draw_branch(ax, x2, y2, new_length, angle + base_angle + rand_angle, depth + 1,
+                max_depth, shrink_factor, branch_angle, attractor,
+                attractor_strength, lines, min_length)
 
-# Ensure your array values are within the valid range (0-255)
-# canvas_rgb = np.clip(canvas_rgb, 0, 255)
+    draw_branch(ax, x2, y2, new_length, angle - base_angle + rand_angle, depth + 1,
+                max_depth, shrink_factor, branch_angle, attractor,
+                attractor_strength, lines, min_length)
 
-# Visualize and save your image
-# plt.imshow(canvas_rgb.astype(np.uint8))
-# plt.axis('off')  # Hide axis
-# plt.show()
 
-# Save the image to the images folder
-# plt.savefig('images/pattern_example.png', bbox_inches='tight', pad_inches=0)
+def draw_tree(title, start_point=(0, -200), initial_angle=90, initial_length=100,
+              shrink_factor=0.7, branch_angle=25, max_depth=10, seed=42,
+              attractor=Point(100, 100), attractor_strength=0.5,
+              min_length=2):
+    # Seed the random number generator for reproducibility
+    random.seed(seed)
+    lines = []
+
+    # Set up the plot
+    fig, ax = plt.subplots(figsize=(6, 8))
+    ax.set_aspect('equal')
+    ax.axis('off')
+    ax.set_title(title)
+
+    # Draw attractor as a red dot
+    ax.scatter(attractor.x, attractor.y, s=50, color='red', zorder=4)
+
+    # Start drawing branches from the root
+    draw_branch(
+        ax,
+        start_point[0],
+        start_point[1],
+        initial_length,
+        initial_angle,
+        0,
+        max_depth,
+        shrink_factor,
+        branch_angle,
+        attractor,
+        attractor_strength,
+        lines,
+        min_length
+    )
+
+    # Draw all branches with color and thickness based on depth
+    for line, depth in lines:
+        x, y = line.xy
+        color = 'saddlebrown'
+        linewidth = max(0.5, (max_depth - depth + 1) * 0.7)
+        ax.plot(x, y, color=color, linewidth=linewidth, zorder=2)
+
+    plt.tight_layout()
+
+    # Save automatically in 'images/'
+    os.makedirs("images", exist_ok=True)
+    filename = title.replace(" ", "_") + ".png"
+    filepath = os.path.join("images", filename)
+    plt.savefig(filepath, dpi=300, bbox_inches="tight")
+    print(f"Saved: {filepath}")
+    plt.close(fig)
+
+
+# Draw four different trees with varying parameters
+draw_tree("Tree 1", branch_angle=25, max_depth=10, seed=42,
+          attractor=Point(50, 200), min_length=2)
+
+draw_tree("Tree 2", branch_angle=30, max_depth=12, seed=99,
+          attractor=Point(-100, 150), min_length=2)
+
+draw_tree("Tree 3", branch_angle=20, shrink_factor=0.65, max_depth=10, seed=123,
+          attractor=Point(0, 300), min_length=2)
+
+draw_tree("Tree 4", branch_angle=35, max_depth=14, seed=2024,
+          attractor=Point(200, 0), min_length=2)
