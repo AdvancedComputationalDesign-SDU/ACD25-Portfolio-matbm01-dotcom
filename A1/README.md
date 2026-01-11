@@ -11,8 +11,8 @@ search_exclude: false
 
 [View on GitHub]({{ site.github.repository_url }})
 
+![Example Image](images/perlin_moire.png)
 
-![A1/images/layered_pattern.png<>](images/layered_pattern.png)
 
 ## Objective
 
@@ -29,6 +29,7 @@ A1/
 ├── BRIEF.md                    
 ├── pattern_generator.py
 └── images/
+    └── perlin_moire.png
     └── layered_pattern.png
 ```
 
