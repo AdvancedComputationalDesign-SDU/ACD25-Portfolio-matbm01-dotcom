@@ -1,15 +1,5 @@
----
-layout: default
-title: Project Documentation
-parent: "A3: Parametric Structural Canopy"
-nav_order: 2
-nav_exclude: false
-search_exclude: false
----
-
+[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/Y7v5QwFr)
 # Assignment 3: Parametric Structural Canopy
-
-[View on GitHub]({{ site.github.repository_url }})
 
 ![Example Canopy](images/canopy.jpg)
 
@@ -22,30 +12,17 @@ In this assignment you will design and generate a **parametric structural canopy
 ## Repository Structure
 
 ```
-A3/
-├── index.md                
-├── README.md                   
-├── BRIEF.md                    
-├── parametric_canopy.py      
-├── parametric_canopy.gh        # Your grasshopper definition
-└── images/                     
-    ├── canopy.png              
-    ├── Design 1 image 1 quad.png
-    ├── Design 1 image 2 quad.png
-    ├── Design 1 image 3 quad.png
-    ├── Design 2 image 1 tri.png
-    ├── Design 2 image 2 tri.png
-    ├── Design 2 image 3 tri.png
-    ├── Design 3 image 1 dia.png
-    ├── Design 3 image 2 dia.png
-    └── Design 3 image 3 dia.png
+Assignment3/
+├── README.md               # Final writeup (your write-up + images)
+├── TEMPLATE.md             # Minimal writeup structure for the report
+├── BRIEF.md                # Assignment handout (this file)
+├── parametric_canopy.py    # GhPython script
+├── parametric_canopy.gh    # Grasshopper definition
+└── images/
+    └── (Output images)
 ```
-            
-# Parametric Structural Canopy
 
-This Python script generates a parametric structural canopy in Grasshopper using GhPython. 
-It combines a sinusoidal heightmap to modulate a NURBS surface, tessellation into panels, 
-and recursive branching supports to produce flexible, visually distinct canopy designs. 
+
 
 ## Pseudo-Code 
 
@@ -144,64 +121,23 @@ This guarantees geometric continuity between recursive supports and the modulate
 ---
 
 ## Technical Explanation
-"""
 
-
-1. Heightmap Generation
------------------------
-- Compute a 2D height field using NumPy.
-- Displacement formula: disp(u,v) = amp * sin(freq * pi * u + phase) * cos(freq * pi * v + phase)
-- Control parameters: amplitude (hm_amp), frequency (hm_freq), phase (hm_phase)
-- Reference function: sample_surface(srf, U, V, amp, freq, phase)
-
-2. Point Grid Creation
-----------------------
-- Sample the base planar NURBS surface into a uniform UV grid.
-- Grid size: (U+1) x (V+1) points for both U and V directions.
-- Reference: sample_surface(...) returns displaced points and the displacement grid.
-
-3. Point Grid Manipulation
---------------------------
-- Offset each point along its local surface normal by the corresponding heightmap displacement.
-- Preserves curvature when base surface is rotated or non-planar.
-- Reference: _bilinear_disp(u,v,disp,...) for interpolating displacement at any parametric location.
-
-4. Surface Construction
------------------------
-- Construct canopy surface patches using the displaced grid points.
-- NURBS/quadratic curves are generated for branches and panels.
-- Reference: rs.AddCurve([...], degree=2) for branch curves.
-
-5. Tessellation
----------------
-- Convert point grid into polygonal panels using three strategies:
-    1. Quad panels: [p0, p1, p2, p3, p0] – structural clarity, UV-aligned
-    2. Triangular panels: [p0, p1, p2, p0] & [p0, p2, p3, p0] – adapts to curvature
-    3. Diagrid panels: [p0, p2, p3, p1, p0] – diamond lattice, visually dynamic
-- Reference: tessellate_panels_from_grid(...) logic embedded in loop over U,V grid
-
-6. Support Structure Generation
--------------------------------
-- Recursive branching algorithm creates vertical trunks and angled supports.
-- Algorithm steps:
-    a. Initialize trunk base and top.
-    b. Compute vertical step per generation (step_z).
-    c. Grow child branches recursively (Grow function):
-        - Apply random tilt and tilt variation.
-        - Blend branch direction with upward attractor vector.
-        - Scale branch to match step_z.
-        - Snap final generation endpoints to canopy surface using force_branch_to_canopy(...).
-        - Lateral bending via midpoint offset.
-        - Create quadratic curve, store in Lines, AllPoints, Widths.
-- Ensures natural-looking branches, avoids collisions, and respects canopy surface.
-
-7. Randomness & Reproducibility
--------------------------------
-- Random seed 's' ensures deterministic branch layouts.
-- Adjusting seed or parameters generates visually distinct canopy variations.
-"""
-
-
+- **Heightmap**
+  - Sinusoidal displacement generates waves in both U and V directions.
+  - `sample_surface()` computes displaced points and stores the grid in `DISP`.
+- **Branch Growth**
+  - Recursive function `Grow()` creates natural-looking branches.
+  - Upward attractor ensures branches reach canopy.
+  - Quadratic curves create smooth bending.
+  - Safety distance prevents overlap of branch endpoints.
+- **Surface Snapping**
+  - `_bilinear_disp()` interpolates displacement at any `(u,v)` parameter.
+  - `force_branch_to_canopy()` snaps branch endpoints to the canopy.
+- **Tessellation**
+  - Quad, triangular, and diagrid styles allow structural and visual flexibility.
+  - Panels are created from sampled surface points.
+- **Randomness & Reproducibility**
+  - Random seed `s` ensures repeatable branch layouts.
 ### UV Mapping and Normal-Based Displacement
 
 The canopy surface is generated from a planar NURBS surface whose UV domain is sampled uniformly using NumPy arrays. Each (i, j) index in the heightmap corresponds to a parametric coordinate (u, v) derived from linear interpolation across the surface domain.
@@ -279,9 +215,9 @@ Three distinct canopy designs were generated by varying:
 | hm_phase        | 0.6    | 
 | canopyZ         | 20     | 
 | tess_mode       | 0      | 
-![alt text](<images/Design 1 image 1 quad.png>)
-![alt text](<images/Design 1 image 2 quad.png>)
-![alt text](<images/Design 1 image 3 quad.png>)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-6.png)
 
 2. 
 | Parameter       | Value  |                                                
@@ -302,11 +238,13 @@ Three distinct canopy designs were generated by varying:
 | hm_freq         | 0.2    |
 | hm_phase        | 0.6    |
 | canopyZ         | 15     |
-| tess_mode       | 1      |
+| tess_mode       | 1      | Triangular
+![alt text](image-8.png)
+![alt text](image-9.png)
+![alt text](image-10.png)
 
-![alt text](<images/Design 2 image 1 tri.png>)
-![alt text](<images/Design 2 image 2 tri.png>)
-![alt text](<images/Design 2 image 3 tri.png>)
+
+
 3. 
 | Parameter       | Value  |                                                
 |-----------------|--------|
@@ -328,10 +266,9 @@ Three distinct canopy designs were generated by varying:
 | canopyZ         | 35     |
 | tess_mode       | 2      |
 
-![alt text](<images/Design 3 image 1 dia.png>)
-![alt text](<images/Design 3 image 2 dia.png>)
-![alt text](<images/Design 3 image 3 dia.png>)
-
+![alt text](image-11.png)
+![alt text](image-12.png)
+![alt text](image-13.png)
 
 | Parameter        | Design 1 | Design 2 | Design 3 |
 | ---------------- | -------- | -------- | -------- |
@@ -340,7 +277,7 @@ Three distinct canopy designs were generated by varying:
 | Angle            | 50       | 25       | 35       |
 | Angle Var        | 10       | 20       | 30       |
 | Height Amp       | 4        | 2        | 1.5      |
-| Frequency        | 0.1      | 0.2      | 0.05     |
+| Frequency        | 0.1      | 0.2      | 0.02     |
 | Phase            | 0.6      | 0.6      | 0.6      |
 | Length L         | 10       | 5        | 5        |
 | Random Seed      | 45       | 25       | 25       |
@@ -350,10 +287,8 @@ Three distinct canopy designs were generated by varying:
 | countY           | 2        | 2        | 3        |
 | U (divisions)    | 20       | 40       | 10       |
 | V (divisions)    | 20       | 70       | 50       |
-| canopyZ (height) | 20       | 15       | 25       |
-| Tessellation     | Quad     | Tri      | Diagrid  |
-
-
+| canopyZ (height) | 20       | 15       | 35       |
+| Tessellation     | Quad     | Triangular | Diagrid  |
 
 
 ## Challenges and Solutions
@@ -390,7 +325,5 @@ Three distinct canopy designs were generated by varying:
 
 The recursive branch growth was built according to my rules — depth limits, tilt variations, attractor bias, lateral bending, and recursive calls were all carried out under my control. I also commanded the sampling of the canopy surface into a sinusoidal displacement field, storing domains globally and generating displaced points exactly as required. Tessellation styles (quad, triangular, diagrid) were constructed following my design choices, and the final output was selected by me.
 
-Throughout the process, the AI as been an assistant, but the authority, design, and control remained mine.
-"""
+Throughout the process, the AI has been an assistant; the authority, design, and control remained mine.
 
----
