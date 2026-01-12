@@ -58,7 +58,6 @@ def _bilinear_disp(u, v, disp, du0, du1, dv0, dv1, U, V):
     i, j = int(math.floor(s)), int(math.floor(t))
     a, b = s - i, t - j
     d00, d10 = float(disp[i, j]), float(disp[i + 1, j])
-    
     d01, d11 = float(disp[i, j + 1]), float(disp[i + 1, j + 1])
     return (1 - a) * (1 - b) * d00 + a * (1 - b) * d10 + (1 - a) * b * d01 + a * b * d11
 

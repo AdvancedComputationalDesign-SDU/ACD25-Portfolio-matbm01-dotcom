@@ -1,57 +1,119 @@
-# Assignment 1: NumPy Array Manipulation for 2D Pattern Generation
-
-# Instructions:
-# - Write your code to generate patterns using NumPy.
-# - Use comments to explain your logic and the methods you're using.
-# - Feel free to be creative and explore different techniques.
-
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Initialize your canvas (e.g., a 2D array filled with zeros)
-# You can adjust the size as needed
-canvas_height = 100  # Modify as desired
-canvas_width = 100   # Modify as desired
-canvas = np.zeros((canvas_height, canvas_width))
+# --------------------------------------------------
+# 1. Image resolution parameters
+# These define the size of the generated image grid.
+# A square format is used to keep spatial relationships simple.
+# --------------------------------------------------
+height = 200
+width = 200
 
-# Apply array manipulations to create a pattern
-# Suggestions:
-# - Use slicing and indexing to create stripes or checkerboards
-# - Use mathematical functions to create gradients
-# - Combine multiple patterns
+# --------------------------------------------------
+# 2. Initialize empty RGB canvas
+# Using a 3D NumPy array allows direct manipulation of color channels.
+# The canvas starts black and is progressively built up by patterns.
+# --------------------------------------------------
+canvas = np.zeros((height, width, 3))
 
-# Example (you can modify or remove this):
-# Create horizontal stripes
-# for i in range(0, canvas_height, 20):
-#     canvas[i:i+10, :] = 255  # Assign a value to create a stripe
+# --------------------------------------------------
+# 3. Create a 2D coordinate system
+# X and Y represent pixel positions and act as input domains
+# for mathematical pattern generation (field-based thinking).
+# --------------------------------------------------
+x = np.arange(width)
+y = np.arange(height)
+X, Y = np.meshgrid(x, y)
 
-# Introduce randomness to add variability
-# Suggestions:
-# - Use np.random functions to add noise
-# - Randomly change pixel values within certain regions
+# --------------------------------------------------
+# 4. Base sine-wave fields
+# Sine functions are used to generate smooth, periodic structures.
+# Different frequencies and orientations are assigned per channel
+# to avoid uniform repetition.
+# --------------------------------------------------
+red_wave = np.sin(Y / 10)     # horizontal waves
+green_wave = np.sin(X / 5)   # vertical waves
+blue_wave = np.sin(Y / 2)    # higher-frequency variation
 
-# Example:
-# noise = np.random.randint(0, 50, (canvas_height, canvas_width))
-# canvas = canvas + noise
+# --------------------------------------------------
+# 5. Radial gradient field
+# This gradient introduces a global spatial hierarchy,
+# emphasizing the center while fading toward the edges.
+# It is later used to modulate the sine fields.
+# --------------------------------------------------
+cx, cy = width // 2, height // 2
+distance = np.sqrt((X - cx)**2 + (Y - cy)**2)
+distance_norm = distance / distance.max()
+radial_gradient = 1 - distance_norm
 
-# Work with RGB channels
-# Convert your 2D canvas to a 3D array for RGB representation
-# Assign different colors to different parts of your pattern
+# --------------------------------------------------
+# 6. Smooth noise field
+# Random values are spatially averaged to avoid pixel-level chaos.
+# This produces a continuous noise field that can meaningfully
+# interact with other mathematical patterns.
+# --------------------------------------------------
+noise = np.random.rand(height, width)
+noise = (
+    noise +
+    np.roll(noise, 1, 0) + np.roll(noise, -1, 0) +
+    np.roll(noise, 1, 1) + np.roll(noise, -1, 1)
+) / 5
 
-# Example:
-# canvas_rgb = np.stack((canvas, canvas, canvas), axis=2)
+# --------------------------------------------------
+# 7. Layered field composition
+# Sine waves are modulated by the radial gradient and noise,
+# allowing randomness to influence the global structure
+# rather than acting as a purely decorative element.
+# --------------------------------------------------
+canvas[:, :, 0] = 120 * red_wave * radial_gradient + 80 * noise
+canvas[:, :, 1] = 120 * green_wave * radial_gradient
+canvas[:, :, 2] = 120 * blue_wave + 100 * noise * radial_gradient
 
-# Assign colors
-# canvas_rgb[:, :, 0] = 255  # Modify the red channel
-# canvas_rgb[:, :, 1] = canvas_rgb[:, :, 1] * 0.5  # Modify the green channel
+# Convert to valid image format
+canvas = np.clip(canvas, 0, 255).astype(np.uint8)
 
-# Ensure your array values are within the valid range (0-255)
-# canvas_rgb = np.clip(canvas_rgb, 0, 255)
+# --------------------------------------------------
+# 8. Central square frame
+# A geometric element is added to contrast the organic background.
+# The frame is drawn via array slicing, reinforcing direct
+# pixel-level manipulation using NumPy.
+# --------------------------------------------------
+s = min(height, width) // 4
+y0 = height // 2 - s // 2
+y1 = height // 2 + s // 2
+x0 = width // 2 - s // 2
+x1 = width // 2 + s // 2
+t = 10
 
-# Visualize and save your image
-# plt.imshow(canvas_rgb.astype(np.uint8))
-# plt.axis('off')  # Hide axis
-# plt.show()
+canvas[y0:y0+t, x0:x1] = [255, 255, 255]
+canvas[y1-t:y1, x0:x1] = [255, 255, 255]
+canvas[y0:y1, x0:x0+t] = [255, 255, 255]
+canvas[y0:y1, x1-t:x1] = [255, 255, 255]
 
-# Save the image to the images folder
-# plt.savefig('images/pattern_example.png', bbox_inches='tight', pad_inches=0)
+# --------------------------------------------------
+# 9. Random green squares
+# These introduce localized contrast and scale variation.
+# While random in placement, they sit on top of a globally
+# modulated background, reinforcing layered composition.
+# --------------------------------------------------
+n_fields = 8
+field_size = 10
+
+for i in range(n_fields):
+    ry = np.random.randint(0, height - field_size)
+    rx = np.random.randint(0, width - field_size)
+    green_shade = np.random.randint(120, 256)
+    canvas[ry:ry+field_size, rx:rx+field_size] = [0, green_shade, 0]
+
+# --------------------------------------------------
+# 10. Save and display result
+# The image is saved for documentation and embedding
+# while still being displayed for interactive inspection.
+# --------------------------------------------------
+plt.figure(figsize=(5, 5))
+plt.imshow(canvas)
+plt.axis('off')
+plt.title("Layered sine, gradient, and noise pattern")
+
+plt.savefig("images/layered_pattern.png", dpi=300, bbox_inches="tight")
+plt.show()
