@@ -154,7 +154,7 @@ deformed_pts = manipulate_point_grid(
 After deformation:
 
 Compute the minimum x, y, z values of the grid
-Translate all points so the geometry starts at the origin
+Translate all points so the geometry starts at the origin.
 
 This ensures consistent positioning for downstream processes.
 
