@@ -8,37 +8,17 @@ search_exclude: false
 ---
 
 # Assignment 4: Agent-Based Modeling for Surface Panelization
+[View on GitHub]({{ site.github.repository_url }})
 
-
-## Repository Structure
-
-```
-A4/
-├── index.md                    
-├── README.md                  
-├── BRIEF.md                    
-├── agent_panelization.gh       # Your grasshopper definition
-├── surface_generator.py        
-├── agent_builder.py            
-├── agent_simulator.py                           
-└── images/                     
-    ├── agent_based.png         
-    ├── Var 1 image 1.png
-    ├── Var 1 image 2.png
-    ├── Var 1 image 3.png
-    ├── Var 2 image 1.png
-    ├── Var 2 image 2.png
-    ├── Var 2 image 3.png
-    ├── Var 3 image 1.png
-    ├── Var 3 image 2.png
-    └── Var 3 image 3.png
-    
 
 
 Table of Contents
 -----------------
 - Project Overview
 - Pseudo-Code
+    - surface_generator.py
+    - agent_builder
+    - agent_simulator
 - Technical Explanation
 - Design Variations
 - Challenges and Solutions
@@ -74,222 +54,618 @@ agent logic to directly inform panel density and orientation.
 
 Pseudo-Code
 -----------
-This section describes the system in sufficient detail to allow full
-re-implementation.
 
-1. Module-Level Structure
-------------------------
+
 
 surface_generator.py
 --------------------
-sample_surface_uniform(U, V, size):
-    initialize empty pt_grid, uv_grid, normal_grid
-    for each u index in range(U):
-        for each v index in range(V):
-            compute normalized u, v in [0,1]
-            create planar Point3d(u*size, v*size, 0)
-            assign normal (0,0,1)
-            store UV, point, and normal
-    return pt_grid, uv_grid, normal_grid
 
-generate_heightmap(u_idx, v_idx, U, V, phase, amp, freq):
-    compute sine/cosine height value
-    return scalar height
 
-manipulate_point_grid(pt_grid, normal_grid, ...):
-    for each grid point:
-        sample heightmap
-        displace point along normal by height
-    compute bounding box minimum
-    translate all points so min corner is at origin
-    return deformed grid
 
-build_surface_from_grid(grid):
-    flatten grid into point list
-    determine surface degree
-    create NurbsSurface from points
-    reparameterize surface to [0,1] x [0,1]
-    return surface
+This script generates a continuous NURBS surface from a
+uniformly sampled planar grid and computes geometric
+signal fields (curvature and slope) over its UV domain.
 
-build_grid_curves(grid):
-    for each U row:
-        interpolate curve through row points
-    for each V column:
-        interpolate curve through column points
-    return u_curves, v_curves
+The resulting surface and fields are intended to be used
+as environmental input for an agent-based simulation.
 
-compute_curvature(surface, uv_grid):
-    for each UV sample:
-        evaluate Gaussian curvature at (u,v)
-        track min and max curvature
-    normalize curvature values to [0,1]
-    return curvature_field
+All geometric fields are aligned in UV-space.
 
-compute_slope(surface, uv_grid):
-    define gravity vector
-    for each UV sample:
-        evaluate surface derivatives
-        compute surface normal
-        project gravity into tangent plane
-        compute slope direction and magnitude
-    normalize slope magnitudes
-    return slope_mag_field, slope_vec_field
+
+
+
+0. INPUT PARAMETERS
+
+U, V:
+    Integer grid resolution in U and V directions (U >= 2, V >= 2)
+
+size:
+    Physical size of surface in model units
+
+amp_
+    Amplitude of heightmap deformation
+
+freq:
+    Frequency of heightmap oscillation
+
+phase:
+    Phase offset of heightmap
+
+1. UNIFORM SURFACE SAMPLING (PLANAR BASE)
+
+Create a uniform sampling grid over the unit UV domain [0,1]².
+For each UV coordinate, generate a corresponding point in
+the XY plane and assign a constant upward normal.
+
+pt_grid, uv_grid, normal_grid = sample_surface_uniform(
+    U=U,
+    V=V,
+    size=size
+)
+
+pt_grid
+    2D array of Point3d in the XY plane
+
+uv_grid
+    2D array of normalized (u,v) coordinates
+
+normal_grid
+    2D array of Vector3d pointing in the +Z direction
+
+
+
+2. HEIGHTMAP DEFINITION
+
+Define a continuous scalar height function H(i,j) that
+modulates surface elevation.
+
+Height is computed analytically from grid indices using
+sinusoidal functions to ensure smooth periodic variation.
+
+Conceptual formula:
+
+H(i,j) = amp *
+         sin(freq * π * i / (U-1) + phase) *
+         cos(freq * π * j / (V-1) + phase)
+
+Height values are not stored explicitly but evaluated
+on demand during deformation.
+
+
+
+
+3. POINT GRID DEFORMATION
+
+Displace each point in the planar grid along its local normal
+direction by the evaluated heightmap value.
+
+
+deformed_pts = manipulate_point_grid(
+    pt_grid=pt_grid,
+    normal_grid=normal_grid,
+    U=U,
+    V=V,
+    phase=phase,
+    amp=amp,
+    freq=freq
+)
+
+
+After deformation:
+
+Compute the minimum x, y, z values of the grid
+Translate all points so the geometry starts at the origin
+
+This ensures consistent positioning for downstream processes.
+
+
+
+
+4. NURBS SURFACE CONSTRUCTION
+
+Construct a single continuous NURBS surface from the
+rectangular grid of deformed points.
+
+
+surface = build_surface_from_grid(deformed_pts)
+
+
+Surface construction rules:
+
+Degrees are clamped to a maximum of cubic (degree ≤ 3)
+Point grid must be rectangular and ordered
+Surface domain is explicitly reset to [0,1] x [0,1]
+
+Result:
+A parametrically well-behaved surface suitable for
+evaluation in normalized UV space.
+
+
+
+5. GRID CURVE EXTRACTION
+
+Extract reference curves following the structure of the
+underlying point grid.
+
+These curves are useful for debugging, visualization,
+and potential panel or agent alignment.
+
+
+u_curves, v_curves = build_grid_curves(deformed_pts)
+
+
+u_curves
+    Interpolated curves along the U direction (rows)
+
+v_curves
+    Interpolated curves along the V direction (columns)
+
+
+
+
+6. GAUSSIAN CURVATURE FIELD COMPUTATION
+
+Evaluate Gaussian curvature at each UV sample point
+on the surface.
+
+
+curvature_field = compute_curvature(
+    surface=surface,
+    uv_grid=uv_grid
+)
+
+
+Procedure:
+
+For each (u,v) in uv_grid:
+    Evaluate surface curvature
+    Extract Gaussian curvature value
+
+Track global minimum and maximum curvature
+Normalize all curvature values to the range [0,1]
+
+Result:
+A UV-aligned scalar field representing surface bending.
+
+
+
+
+7. SLOPE FIELD COMPUTATION
+
+Compute surface slope relative to gravity.
+
+Gravity is assumed to act in the negative Z direction.
+
+
+slope_magnitude, slope_vectors = compute_slope(
+    surface=surface,
+    uv_grid=uv_grid
+)
+
+For each UV sample:
+
+Evaluate surface tangents and normal
+Project gravity vector onto the tangent plane
+Compute slope magnitude from surface inclination
+Store downhill direction as a unit tangent vector
+
+Slope magnitudes are normalized globally to [0,1].
+
+
+8. OUTPUT DATA
+
+The following data is passed downstream to the agent system.
+
+
+OUT_surface   = surface
+OUT_pts       = deformed_pts
+OUT_uv        = uv_grid
+OUT_u_curves  = u_curves
+OUT_v_curves  = v_curves
+OUT_curvature = curvature_field
+OUT_slope     = slope_magnitude
+OUT_slope_vec = slope_vectors
+
 
 agent_builder.py
 ----------------
 
-class GeoAgent:
 
-    __init__(u, v, surface, dom_u, dom_v, uv_grid,
-             curvature_field, slope_mag_field, slope_vec_field):
-  
-  store UV position (u, v)
-        store surface reference and parameter domains
-        store UV sampling grid
-        store curvature scalar field
-        store slope magnitude field
-        store slope direction vector field
-        initialize random velocity in UV space
-        evaluate initial 3D position on surface
+This script defines an agent-based system where agents move
+in the parametric (UV) domain of a NURBS surface.
 
-    _sample_indices():
-        convert continuous UV coordinates to discrete grid indices
-        u_idx = int(u * (grid_width - 1))
-        v_idx = int(v * (grid_height - 1))
-        return u_idx, v_idx
+Agents are influenced by:
+- precomputed scalar curvature fields
+- directional slope fields
+- local neighbor interactions (separation, cohesion, alignment)
 
-    _curvature_force():
-        sample normalized Gaussian curvature at (u_idx, v_idx)
-        compute speed scaling factor:
-            speed_scale = 1.0 - curvature
-        return:
-            - zero directional force
-            - scalar speed modifier based on curvature
+Agent motion occurs in UV-space and is projected back onto
+the surface to produce 3D positions.
 
-    _slope_force():
-        sample slope magnitude at (u_idx, v_idx)
-        sample slope direction vector at (u_idx, v_idx)
-        project slope direction into UV space
-        scale direction by slope magnitude
-        return UV-space slope force vector
-
-    _neighbors_in_radius(agents, radius):
-        for each agent in agents:
-            compute UV distance
-            if distance < radius:
-                add to neighbor list
-        return neighbors
-
-    _separation_force(neighbors):
-        initialize zero force
-        for each neighbor:
-            compute direction away from neighbor in UV space
-            weight force inversely by distance
-            accumulate repulsion vectors
-        return separation force
-
-    _cohesion_force(neighbors):
-        compute average UV position of neighbors
-        compute direction from current agent to centroid
-        normalize vector
-        return cohesion force
-
-    _alignment_force(neighbors):
-        compute average velocity of neighbors
-        normalize vector
-        return alignment force
-
-    steer(agents, radius, curv_w, slope_w,
-          separation_w, cohesion_w, alignment_w, max_speed):
-        sample curvature signal:
-            curvature modifies agent speed via speed scaling
-        sample slope signal:
-            slope provides directional force in UV space
-
-        update velocity:
-            velocity += curv_w * curvature_force
-            velocity += slope_w * slope_force
-            velocity *= curvature speed scale
-
-        if neighbors exist:
-            apply separation, cohesion, and alignment forces
-            velocity += weighted boid forces
-
-        clamp velocity magnitude to max_speed
-
-    update():
-        advance UV position using velocity
-        clamp UV to surface parameter domain
-        evaluate new 3D position on surface
-
-build_agents_on_surface(n, surface, uv_grid, curvature_field, slope_mag_field, slope_vec_field):
-    query surface parameter domains
-    for i in range(n):
-        sample random (u, v) within domain
-        create GeoAgent with field references
-    return list of agents
+The simulation is designed to run iteratively inside Grasshopper
+while preserving agent state between solutions.
 
 
-build_agents_on_surface(n, surface, fields):
-    sample random UV coordinates
-    create GeoAgent instances
-    return list of agents
+
+
+0. INPUT DATA
+
+surface
+    NURBS surface on which agents move
+
+uv_grid
+    2D grid of normalized UV coordinates used for field indexing
+
+curvature_field
+    UV-aligned scalar field representing normalized Gaussian curvature
+
+slope_mag
+    UV-aligned scalar field representing normalized slope magnitude
+
+slope_vec
+    UV-aligned vector field representing downhill directions
+
+N
+    Number of agents to spawn
+
+seed (optional)
+    Random seed for reproducibility
+
+
+
+
+1. AGENT REPRESENTATION (GeoAgent)
+
+Each agent stores its state in surface parameter space (u,v)
+and maintains a small velocity vector also defined in UV-space.
+
+The agent does not modify geometry directly.
+All motion happens in UV coordinates and is evaluated
+onto the surface when a 3D position is required.
+
+
+
+
+2. AGENT INITIALIZATION
+
+When a GeoAgent is created:
+
+- Assign initial (u,v) coordinates on the surface
+- Store references to:
+    - surface
+    - surface parameter domains
+    - uv_grid
+    - curvature field
+    - slope magnitude field
+    - slope direction field
+- Evaluate the surface at (u,v) to obtain an initial 3D position
+- Initialize a small random velocity in UV-space
+
+
+
+
+3. UV-TO-GRID INDEX MAPPING
+
+Agents move continuously in UV-space, but environmental fields
+are stored as discrete grids.
+
+To sample fields:
+- Convert continuous (u,v) into integer grid indices
+- Clamp indices to grid bounds
+- Use these indices to access curvature and slope data
+
+
+
+
+4. FIELD-BASED FORCES
+
+
+
+
+4.1 Curvature Force
+
+Curvature is treated as a non-directional influence.
+
+Procedure:
+- Sample curvature value c from curvature_field at agent index
+- Compute speed damping factor as (1 - c)
+- Do not apply a directional force
+- Return:
+    - zero force vector
+    - scalar speed multiplier
+
+
+
+
+4.2 Slope Force
+
+Slope provides a directional influence.
+
+Procedure:
+- Sample slope magnitude and slope direction vector
+- Multiply direction vector by slope magnitude
+- Convert result to a UV-space force vector
+- Return directional steering force
+
+
+
+
+5. NEIGHBOR DETECTION
+
+Agents interact locally using UV-space distances.
+
+Procedure:
+- Compute Euclidean distance between agents in UV-space
+- Collect all agents within a specified neighborhood radius
+- Exclude the agent itself from the neighbor list
+
+
+
+
+6. BOID-STYLE INTERACTION FORCES
+
+
+
+
+6.1 Separation Force
+
+Purpose:
+Prevent agents from clustering or overlapping.
+
+Procedure:
+- For each neighbor:
+    - Compute vector pointing away from neighbor
+    - Scale force inversely with distance
+    - Increase force as distance approaches zero
+- Sum all repulsion vectors
+- Return separation steering force
+
+
+
+
+6.2 Cohesion Force
+
+Purpose:
+Pull agents toward the local group centroid.
+
+Procedure:
+- Compute average (u,v) position of neighbors
+- Compute vector from agent position to centroid
+- Normalize the vector
+- Return cohesion steering direction
+
+
+
+
+6.3 Alignment Force
+
+Purpose:
+Align agent velocity with nearby agents.
+
+Procedure:
+- Compute average velocity of neighbors in UV-space
+- Normalize the resulting velocity vector
+- Return alignment steering direction
+
+
+
+
+7. STEERING LOGIC
+
+At each simulation step, the agent updates its velocity by:
+
+1. Sampling curvature and slope fields
+2. Applying slope force and curvature-based speed damping
+3. Sampling neighboring agents within a given radius
+4. Applying weighted separation, cohesion, and alignment forces
+5. Clamping velocity magnitude to a maximum allowed speed
+
+All forces are combined in UV-space.
+
+
+
+
+8. POSITION UPDATE
+
+After velocity is updated:
+
+- Add velocity to the agent's (u,v) coordinates
+- Clamp (u,v) to the surface parameter domain
+- Evaluate the surface at the new (u,v)
+- Update the agent’s 3D position accordingly
+
+
+
+
+9. AGENT SPAWNING
+
+To initialize a population of agents:
+
+Procedure:
+- Optionally set random seed
+- Query surface parameter domains
+- For each agent:
+    - Sample random (u,v) within surface domains
+    - Create a GeoAgent with shared field references
+- Return list of initialized agents
+
+
+
+
+10. GRASSHOPPER EXECUTION MODEL
+
+The Grasshopper component:
+
+- Stores the agent list as persistent state
+- Rebuilds agents only when reset is triggered
+- On each solution:
+    - Calls steer() on each agent
+    - Calls update() on each agent
+- Outputs:
+    - agent objects
+    - corresponding 3D point positions
+
+
+
+
+11. OUTPUT DATA
+
+OUT_agents
+    List of GeoAgent instances with updated internal state
+
+OUT_positions
+    List of 3D points representing agent positions on the surface
+
+
 
 agent_simulator.py
 ------------------
-for each timestep:
-    for each agent:
-        agent.steer(all_agents, parameters)
-        agent.update()
 
-output:
-    list of Point3d positions
-    list of velocity vectors for visualization
+This script defines a single evolution step of a surface-bound
+agent simulation.
 
-2. Main Simulation Loop
-----------------------
-initialize surface and geometric fields
-initialize agents across surface domain
+Agents are assumed to already exist and persist across iterations.
+The simulator does not create agents and does not compute surface
+fields. It only advances the simulation by one timestep.
 
-while simulation is running:
-    for each agent:
-        sample curvature and slope at UV
-        compute velocity update
-        apply interaction rules
-        clamp speed
-        update UV position
-        update 3D position
-    output positions and vectors to Grasshopper
+All agent motion occurs in UV-space and is projected onto the
+surface via the agent update routine.
 
-3. Agent Class Logic
--------------------
-Attributes:
-    - UV coordinates (u, v)
-    - UV velocity vector
-    - Surface reference
-    - Curvature and slope fields
-    - 3D position
 
-Methods:
-    - Field sampling via UV-to-index mapping
-    - Weighted force accumulation
-    - Neighbor-based interaction forces
-    - Position update and clamping
 
-4. Panelization Logic (Conceptual)
----------------------------------
-The intended panelization logic is driven by agent trajectories and densities:
 
-    - Regions of high curvature slow agents down
-    - Slower movement leads to denser trajectories
-    - Denser trajectories suggest smaller panel sizes
-    - Slope-aligned motion biases panel orientation
+0. INPUT DATA
 
-This logic establishes a conceptual framework where surface geometry directly
-controls panel density and orientation. While the full automated translation
-from agent paths to discrete panel elements was not fully implemented, the
-simulation output provides a geometric basis for rationalized subdivision
-and further post-processing.
+agents:
+    List of GeoAgent objects representing the current population
+
+rad:
+    Neighborhood search radius in UV-space
+
+curv_w:
+    Weight controlling curvature-based speed damping
+
+slope_w:
+    Weight controlling slope-based directional influence
+
+sep:
+    Weight of separation force (repulsion)
+
+coh:
+    Weight of cohesion force (attraction)
+
+ali:
+    Weight of alignment force (velocity matching)
+
+max_speed:
+    Maximum allowed velocity magnitude in UV-space
+
+
+
+
+1. SIMULATION ASSUMPTIONS
+
+Agents:
+- Are already initialized before this script runs
+- Contain persistent state (u, v, velocity, position)
+- Have access to shared surface field data internally
+
+This script represents exactly one timestep.
+Repeated execution advances the simulation over time.
+
+
+2. AGENT EVOLUTION LOOP
+
+Iterate over all agents and update them sequentially.
+
+
+for a in agents:
+
+    
+    2.1 Velocity Update (Steering Phase)
+
+    For the current agent:
+
+    - Combine environmental field influences:
+        * curvature field → speed damping
+        * slope field → directional driving force
+
+    - Combine local neighbor interactions:
+        * separation → avoid crowding
+        * cohesion → move toward local group centroid
+        * alignment → match local velocity direction
+
+    The full agent list is passed in to allow neighborhood queries
+    within the specified UV radius.
+    
+
+    a.steer(
+        agents=agents,
+        radius=rad,
+        curv_w=curv_w,
+        slope_w=slope_w,
+        separation_w=sep,
+        cohesion_w=coh,
+        alignment_w=ali,
+        max_speed=max_speed
+    )
+
+    
+    2.2 Position Update
+
+    After velocity has been updated:
+
+    - Advance the agent in UV-space
+    - Clamp UV coordinates to the surface parameter domain
+    - Evaluate the surface at the new (u,v)
+    - Update the agent’s 3D position
+    
+
+    a.update()
+
+
+
+3. OUTPUT GEOMETRY FOR VISUALIZATION
+
+Convert agent state into Rhino geometry for display.
+
+
+3.1 Agent Positions
+
+Each agent’s current 3D position on the surface is
+converted into a Point3d.
+
+
+OUT_positions = [
+    rg.Point3d(a.position[0], a.position[1], a.position[2])
+    for a in agents
+]
+
+
+
+3.2 Agent Velocity Vectors
+
+Each agent’s velocity is visualized as a line:
+
+- Line start: agent position
+- Line end: position offset by UV velocity components
+
+These vectors indicate direction and relative magnitude
+of motion projected into 3D space.
+
+
+OUT_vectors = [
+    rg.Line(
+        rg.Point3d(*a.position),
+        rg.Point3d(
+            a.position[0] + a.velocity[0],
+            a.position[1] + a.velocity[1],
+            a.position[2]
+        )
+    )
+    for a in agents
+]
+
 
 Technical Explanation
 ---------------------
@@ -353,7 +729,7 @@ Design Variations
 -----------------
 This section documents parameter studies and design explorations. Each
 variation corresponds to a different configuration of agent weights, counts,
-and interaction radii. Images and links should be inserted where indicated.
+and interaction radius.
 
 Variation 1:
 ---------------------------------------
@@ -365,14 +741,14 @@ Signals Used:
     curvature 
 
 Key Parameters:
-    - number of agents: 200
-    - curvature weight:1
-    - slope weight: 0.1
-    - cohesion: 0.049
-    - alignment weights: 0.01
+ - number of agents: 200
+ - curvature weight:1
+ - slope weight: 0.1
+ - cohesion: 0.049
+ - alignment weights: 0.01
 
 Description:
- Agent moves on surface which seems not to be effected by the geometricsignal.     
+ Agent moves on surface which seems not to be effected by the geometric signal.     
 
 Variation 2: 
 ---------------------------------------
@@ -384,16 +760,16 @@ Signals Used:
     slope
 
 Key Parameters:
-    - number of agents: 50
-    - curvature weight: 0.1
-    - slope weight: 1
-    - cohesion: 0.8
-    - alignment weights: 0.1
+- number of agents: 50
+- curvature weight: 0.1
+- slope weight: 1
+- cohesion: 0.8
+- alignment weights: 0.1
 
 Description:
-    - fewer agents
-    - agents closer to each when changing cohesion. 
-    - not a signficant behahavior difference when changing geometric signal
+- fewer agents
+- agents closer to each when changing cohesion. 
+- not a signficant behahavior difference when changing geometric signal
 
 Variation 3: 
 ---------------------------------------
@@ -406,14 +782,15 @@ Signals Used:
     curvature + slope
 
 Key Parameters:
-    - number of agents: 150
-    - curvature weight: 0.5
-    - slope weight: 0.5
-    - cohesion: 0.01
-    - alignment weights: 1
+- number of agents: 150
+- curvature weight: 0.5
+- slope weight: 0.5
+ - cohesion: 0.01
+ - alignment weights: 1
 Description:
     Not a significant difference in their behavior
     
+Across all variations, the influence of the geometric signals remains limited compared to agent–agent interaction forces. In Variation 1, curvature acts only as a speed-damping factor and therefore does not introduce directional bias, resulting in behavior that appears largely independent of surface geometry. In Variation 2, slope provides a directional signal, but relatively strong cohesion causes agents to prioritize group behavior over geometric guidance. In Variation 3, the combination of curvature and slope is further suppressed by strong alignment, leading to synchronized motion that reduces sensitivity to surface-based inputs. Overall, the experiments indicate that while geometric fields are successfully sampled, their behavioral impact is outweighed by collective interaction parameters.
 
 Challenges and Solutions
 ------------------------
@@ -426,15 +803,12 @@ Challenges and Solutions
 - Noisy curvature values:
     Solved by normalization and fallback handling
 
-- Find good values to show a clear defference in behavior
+- Find good values to show a clear difference in behavior
 
 AI Acknowledgments
 ------------------
 I used AI as a controlled support tool during the development of this assignment. I defined the system logic, overall structure, and all rules governing agent behavior, including how curvature and slope fields influence motion, velocity modulation, and UV-space navigation. The AI assisted in carrying out these instructions, such as structuring the UV grid, outlining the computation of curvature and slope fields, and organizing the agent class with its steering and update methods. All geometric reasoning, agent behavior design, parameter selection, and implementation decisions were developed and evaluated by the me. AI was used strictly as an assistive tool and not as a source of original design or computational logic.
 
-Grasshopper file
-------------------------
-I didn't manage to attach the grasshopper file here. I have sent you an email from Math21m@student.sdu.dk with the file.
 
 References
 ----------
