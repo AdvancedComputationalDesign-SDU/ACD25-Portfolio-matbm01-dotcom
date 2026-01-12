@@ -11,28 +11,6 @@ search_exclude: false
 
 [View on GitHub]({{ site.github.repository_url }})
 
-![Example Image](images/perlin_moire.png)
-
-
-## Objective
-
-The goal of this assignment is to create a Python program using NumPy to manipulate a 2-dimensional array and transform a blank canvas into a patterned image. You are asked apply various array operations, introduce randomness, and work with RGB channels to produce full-color images.
-
----
-
-## Repository structure
-
-```
-A1/
-├── index.md                    
-├── README.md                   
-├── BRIEF.md                    
-├── pattern_generator.py
-└── images/
-    └── perlin_moire.png
-    └── layered_pattern.png
-```
-
 
 ## Table of Contents
 
@@ -41,7 +19,6 @@ A1/
 - Results  
 - References  
 
----
 
 ## Pseudo-Code
 1. Define image domain

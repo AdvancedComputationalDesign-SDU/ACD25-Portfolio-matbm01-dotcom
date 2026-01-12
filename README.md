@@ -1,17 +1,8 @@
 
-
-## Checklist Before Publishing
-- [ ] Assignment `README.md` files are complete (no placeholders).
-- [ ] Images are in the correct `images/` folder and referenced with relative paths.
-- [ ] Code runs and matches what you document.
-- [ ] `_config.yml` has your name and correct `baseurl`.
-- [ ] Changes are committed and pushed; GitHub Pages build is green.
-
 # Mathias Madsen — ACD-E25 Portfolio
 
 ## Overview
-This portfolio documents four computational design studies developed for Advanced Computational Design. Across the series, I investigate <theme> through <methods/tools>, iterating through prototypes, parameter sweeps, and visual evaluation.
-
+This portfolio documents four computational design studies developed for Advanced Computational Design. Across the series, I investigate emergent spatial patterns through computational modeling and parametric design tools, iterating through prototypes, parameter sweeps, and visual evaluation.
 ## Assignments
 
 ### A1: NumPy Array Manipulation for 2D Pattern Generation

@@ -11,31 +11,7 @@ search_exclude: false
 
 [View on GitHub]({{ site.github.repository_url }})
 
-![Example Fractal](images/branching.png)
 
-## Objective
-
-In this assignment you will implement a **recursive generator** and enrich it with **geometric influences** that shape how the structure grows in space. You will work with geometric primitives (lines, polylines) using **Shapely** and render the results (e.g., with Matplotlib). The core of the assignment is to **couple formal grammar growth with spatial rules** such as attractor/repulsor points, fields, and collision constraints to produce expressive, controllable patterns.
-
-While the branching or growth approach can be inspired by L-systems, it does not have to be strictly L-system based. You are encouraged to explore recursive generation methods influenced by spatial constraints and geometric rules that govern how the fractal develops and interacts with its environment. This opens opportunities to experiment with recursive branching logic, adaptive scaling, and spatial modulation beyond formal grammar rewriting.
-
----
-
-## Repository structure
-
-```
-A2/
-├── index.md                    
-├── README.md                   
-├── BRIEF.md                    
-├── fractal_generator.py        
-└── images/                     
-    ├── branching.png           
-    └── Tree_1.png
-    ├── Tree_2.png
-    ├── Tree_3.png
-    └── Tree_4.png
-```
 
 # Table of Contents
 
@@ -48,7 +24,7 @@ A2/
 - Challenges and Solutions
 - References
 
----
+
 
 # Pseudo-Code
 
@@ -152,19 +128,40 @@ Tree outputs are saved in `images/` and embedded below with parameters for clari
 
 **Tree 1:**  
 ![Tree 1](images/Tree_1.png)  
-Parameters: Depth=10, Branch Angle=25°, Shrink Factor=0.7, Attractor=(50,190), Seed=42  
+Parameters: 
+- Depth=10
+- Branch Angle=25°
+- Shrink Factor=0.7
+- Attractor=(50,190)
+- Seed=42  
 
 **Tree 2:**  
 ![Tree 2](images/Tree_2.png)  
-Parameters: Depth=12, Branch Angle=30°, Shrink Factor=0.7, Attractor=(-100,150), Seed=99  
+Parameters: 
+- Depth=12
+- Branch Angle=30°
+- Shrink Factor=0.7
+- Attractor=(-100,150)
+- Seed=99  
 
 **Tree 3:**  
 ![Tree 3](images/Tree_3.png)  
-Parameters: Depth=10, Branch Angle=20°, Shrink Factor=0.65, Attractor=(0,185), Seed=123  
+Parameters: 
+- Depth=10
+- Branch 
+- Angle=20°
+- Shrink Factor=0.65
+- Attractor=(0,185)
+- Seed=123  
 
 **Tree 4:**  
 ![Tree 4](images/Tree_4.png)  
-Parameters: Depth=14, Branch Angle=35°, Shrink Factor=0.7, Attractor=(220,0), Seed=2024  
+Parameters: 
+- Depth=14
+- Branch Angle=35°
+- Shrink Factor=0.7
+- Attractor=(220,0)
+- Seed=2024  
 
 ---
 
@@ -174,4 +171,3 @@ Parameters: Depth=14, Branch Angle=35°, Shrink Factor=0.7, Attractor=(220,0), S
 - Matplotlib Pyplot Tutorial: https://matplotlib.org/stable/tutorials/introductory/pyplot.html  
 - Recursion explanation: https://en.wikipedia.org/wiki/Recursion_(computer_science)  
 - Trigonometry basics: https://en.wikipedia.org/wiki/Trigonometry  
-"""
