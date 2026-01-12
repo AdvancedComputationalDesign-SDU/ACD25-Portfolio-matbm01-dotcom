@@ -790,6 +790,7 @@ Key Parameters:
 Description:
     Not a significant difference in their behavior
     
+#### Evaluation:
 Across all variations, the influence of the geometric signals remains limited compared to agent–agent interaction forces. In Variation 1, curvature acts only as a speed-damping factor and therefore does not introduce directional bias, resulting in behavior that appears largely independent of surface geometry. In Variation 2, slope provides a directional signal, but relatively strong cohesion causes agents to prioritize group behavior over geometric guidance. In Variation 3, the combination of curvature and slope is further suppressed by strong alignment, leading to synchronized motion that reduces sensitivity to surface-based inputs. Overall, the experiments indicate that while geometric fields are successfully sampled, their behavioral impact is outweighed by collective interaction parameters.
 
 Challenges and Solutions
