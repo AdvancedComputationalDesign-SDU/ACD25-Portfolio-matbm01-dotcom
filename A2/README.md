@@ -36,12 +36,6 @@ A2/
     ├── Tree_3.png
     └── Tree_4.png
 ```
----
-
----
-
-
----
 
 # Table of Contents
 

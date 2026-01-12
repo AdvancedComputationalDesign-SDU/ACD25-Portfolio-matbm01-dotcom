@@ -85,7 +85,7 @@ Use the template below to draft your homepage, replacing the entire content of t
 - When you are ready to submit, **remove the surrounding code fence** (the triple backticks) so it renders as your landing page.
 - **Delete the guide sections above** for a clean portfolio homepage.
 
-```md
+
 # <Your Name> — ACD-E25 Portfolio
 
 ## Overview
@@ -113,4 +113,4 @@ In A4, I use agent behaviors to sample and rationalize a surface into a panelize
 ## Contact (optional)
 - GitHub: <link>
 - Email: <email>
-```
+
